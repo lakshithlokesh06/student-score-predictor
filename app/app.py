@@ -21,6 +21,43 @@ feature_names = [
     "Sample Question Papers Practiced"
 ]
 
+feature_tip_bank = {
+    "Hours Studied": {
+        "focus": "Study consistency",
+        "tip": "Increase focused study time with a simple daily plan. Break sessions into short blocks, revise one concept at a time, and protect distraction-free hours."
+    },
+    "Previous Scores": {
+        "focus": "Core concept recovery",
+        "tip": "Your earlier scores suggest some concepts may still be weak. Revisit past mistakes, identify repeated topics, and rebuild those fundamentals before moving ahead."
+    },
+    "Extracurricular Activities": {
+        "focus": "Time balance",
+        "tip": "Try balancing activities with study time more intentionally. Keep extracurriculars, but anchor them around your study schedule so academic work stays consistent."
+    },
+    "Sleep Hours": {
+        "focus": "Sleep routine",
+        "tip": "A better sleep schedule can improve concentration and memory. Aim for a steady bedtime and enough rest before heavy study sessions or tests."
+    },
+    "Sample Question Papers Practiced": {
+        "focus": "Exam practice",
+        "tip": "Practice more sample papers under timed conditions. This builds speed, reduces exam stress, and reveals the exact topics where you lose marks most often."
+    }
+}
+
+grade_recommendation_intro = {
+    "A": "You are performing strongly. These suggestions will help you protect your momentum and sharpen the few areas pulling your score down.",
+    "B": "You already have a solid base. These targeted improvements can help you convert a good result into an excellent one.",
+    "C": "You are within reach of a much better score. Focus on the weakest drivers first and improve them one step at a time.",
+    "D": "This score needs immediate attention, but it is still fixable. Start with the biggest negative factors below and work on them consistently this week."
+}
+
+grade_recommendation_action = {
+    "A": "Maintain your habits while making small upgrades here for even stronger performance.",
+    "B": "A focused push in this area can create a noticeable jump in your overall score.",
+    "C": "Improving this area first should give you one of the fastest gains.",
+    "D": "Treat this as a priority area and act on it right away for the next study cycle."
+}
+
 # Page config
 st.set_page_config(page_title="Student Score Predictor", page_icon="🎓", layout="wide")
 
@@ -68,6 +105,42 @@ st.markdown("""
         margin-top: 10px;
         color: #ccc;
         font-size: 0.9rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <style>
+    .recommendation-card {
+        background: linear-gradient(135deg, #161b26, #1f2937);
+        border: 1px solid #2d3748;
+        border-left: 4px solid #0d6efd;
+        border-radius: 16px;
+        padding: 18px 20px;
+        margin: 14px 0;
+        color: #e5e7eb;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    }
+    .recommendation-card h4 {
+        margin: 0 0 8px 0;
+        color: white;
+        font-size: 1.05rem;
+    }
+    .recommendation-card p {
+        margin: 0;
+        color: #cbd5e1;
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+    .recommendation-badge {
+        display: inline-block;
+        margin-bottom: 10px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(13, 110, 253, 0.18);
+        color: #93c5fd;
+        font-size: 0.8rem;
+        font-weight: 600;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -230,6 +303,49 @@ elif st.session_state.page == "predictor":
                         st.markdown(f"✅ **{fname}** boosted your score by **+{fval:.1f}** points")
                     else:
                         st.markdown(f"❌ **{fname}** reduced your score by **{fval:.1f}** points")
+
+                recommendation_container = st.container()
+                with recommendation_container:
+                    st.markdown("### 🎯 Personalized Recommendations")
+                    grade_key = grade.split()[0]
+                    negative_features = sorted(
+                        [(fname, fval) for fname, fval in zip(feature_names, input_contribution) if fval < 0],
+                        key=lambda x: x[1]
+                    )
+                    has_negative_contribution = len(negative_features) > 0
+
+                    st.markdown(f"""
+                    <div class='recommendation-card'>
+                        <div class='recommendation-badge'>Grade {grade_key} Action Plan</div>
+                        <h4>What to focus on next</h4>
+                        <p>{grade_recommendation_intro[grade_key]}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    if has_negative_contribution:
+                        for fname, fval in negative_features[:3]:
+                            tip_content = feature_tip_bank[fname]
+                            st.markdown(f"""
+                            <div class='recommendation-card'>
+                                <div class='recommendation-badge'>{tip_content["focus"]}</div>
+                                <h4>{fname} is lowering your predicted score</h4>
+                                <p>
+                                    This factor reduced your score by <b>{abs(fval):.1f}</b> points.
+                                    {tip_content["tip"]} {grade_recommendation_action[grade_key]}
+                                </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.markdown("""
+                        <div class='recommendation-card'>
+                            <div class='recommendation-badge'>Strong overall balance</div>
+                            <h4>No major negative feature impact detected</h4>
+                            <p>
+                                Your current inputs are not showing any strong negative pull on the prediction.
+                                Keep your routine stable, continue practicing consistently, and review performance weekly to stay on track.
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
                 # Show history
                 st.markdown("### 📜 Prediction History")
