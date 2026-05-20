@@ -119,7 +119,7 @@ elif st.session_state.page == "predictor":
         st.markdown("### 📋 Student Details")
         hours = st.slider("📚 Daily Study Hours", 1, 9, 1)
         prev_scores = st.slider("📊 Previous Scores", 40, 100, 40)
-        extra = st.selectbox("🏃 Extracurricular Activities", ["No", "Yes"])
+        extra = st.selectbox("🏃 Extracurricular Activities", ["Select...", "Yes", "No"])
         sleep = st.slider("😴 Sleep Hours", 4, 9, 4)
         papers = st.slider("📝 Question Papers Practiced", 0, 9, 0)
 
