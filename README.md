@@ -72,7 +72,7 @@ Each prediction comes with:
 ---
 
 ## 📁 Project Structure
-\```
+````
 student-score-predictor/
 │
 ├── data/
@@ -91,7 +91,7 @@ student-score-predictor/
 ├── plots/                    # Saved visualizations
 ├── requirements.txt
 └── README.md
-\```
+````
 
 ---
 
