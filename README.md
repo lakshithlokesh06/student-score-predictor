@@ -14,24 +14,6 @@ Unlike traditional prediction apps, this project not only predicts student perfo
 
 ---
 
-## 🖼️ App Preview
-
-Add screenshots here:
-
-### Landing Page
-(Add screenshot)
-
-### Prediction Dashboard
-(Add screenshot)
-
-### SHAP Feature Contribution
-(Add screenshot)
-
-### Recommendation Engine
-(Add screenshot)
-
----
-
 ## 🖥️ App Features
 
 - 🎯 Predicts student Performance Index (0–100)
