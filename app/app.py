@@ -348,11 +348,13 @@ elif st.session_state.page == "predictor":
                         """, unsafe_allow_html=True)
 
                 # Show history
-                st.markdown("### 📜 Prediction History")
-                if os.path.exists(history_file):
-                    history_df = __import__('pandas').read_csv(history_file)
-                    st.dataframe(history_df, use_container_width=True)
-
+                with st.expander("View Prediction History"):
+                    if os.path.exists(history_file):
+                        history_df = __import__('pandas').read_csv(history_file)
+                        st.dataframe(history_df, use_container_width=True)
+                    
+                    else:
+                        st.info("No prediction history available yet.")
         else:
             st.markdown("""
             <div style='text-align:center; padding: 80px 0; color: #555;'>
