@@ -2,6 +2,9 @@ import streamlit as st
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
+import os
+from datetime import datetime
 
 # Load model and scaler
 with open("models/model.pkl", "rb") as f:
@@ -57,9 +60,6 @@ st.markdown("""
         width: 100%;
         cursor: pointer;
     }
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #6610f2, #0d6efd);
-    }
     .tip-box {
         background: #1c1f2e;
         border-left: 4px solid #0d6efd;
@@ -69,21 +69,17 @@ st.markdown("""
         color: #ccc;
         font-size: 0.9rem;
     }
-    .landing-container {
-        text-align: center;
-        padding: 80px 20px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# Session state to track page
+# Session state
 if "page" not in st.session_state:
     st.session_state.page = "home"
 
 # ─── HOME PAGE ───
 if st.session_state.page == "home":
     st.markdown("""
-    <div class='landing-container'>
+    <div style='text-align:center; padding: 80px 20px;'>
         <h1 style='font-size: 3.5rem; color: white;'>🎓 Student Score Predictor</h1>
         <p style='font-size: 1.3rem; color: #aaa; margin-top: 10px;'>
             Predict your academic performance using Machine Learning & Explainable AI
@@ -104,13 +100,12 @@ if st.session_state.page == "home":
 # ─── PREDICTOR PAGE ───
 elif st.session_state.page == "predictor":
 
-    # Back button
     if st.button("← Back to Home"):
         st.session_state.page = "home"
         st.rerun()
 
     st.markdown("<h1 style='text-align:center; color:white;'>🎓 Student Score Predictor</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:#aaa; font-size:1.1rem;'>Predict academic performance using Machine Learning & Explainable AI</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#aaa;'>Predict academic performance using Machine Learning & Explainable AI</p>", unsafe_allow_html=True)
     st.markdown("---")
 
     col1, col2 = st.columns([1, 2])
@@ -156,67 +151,91 @@ elif st.session_state.page == "predictor":
             </div>""", unsafe_allow_html=True)
 
         if predict_btn:
-            input_raw = np.array([[hours, prev_scores, extra_val, sleep, papers]])
-            input_scaled = scaler.transform(input_raw)
-            prediction = model.predict(input_scaled)[0]
-            prediction = np.clip(prediction, 0, 100)
-
-            if prediction >= 80:
-                grade = "A 🌟"
-                msg = "Outstanding Performance!"
-            elif prediction >= 60:
-                grade = "B 👍"
-                msg = "Good Performance!"
-            elif prediction >= 40:
-                grade = "C 📈"
-                msg = "Average - Keep Pushing!"
+            if extra == "Select...":
+                st.warning("⚠️ Please select Extracurricular Activities before predicting!")
             else:
-                grade = "D 💪"
-                msg = "Needs Improvement!"
+                input_raw = np.array([[hours, prev_scores, extra_val, sleep, papers]])
+                input_scaled = scaler.transform(input_raw)
+                prediction = model.predict(input_scaled)[0]
+                prediction = np.clip(prediction, 0, 100)
 
-            st.markdown(f"""
-            <div class='result-box'>
-                <p>Predicted Performance Index</p>
-                <h1>{prediction:.1f} / 100</h1>
-                <p>Grade: {grade} &nbsp;|&nbsp; {msg}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown("### 🔍 Why this prediction?")
-            coefficients = model.coef_
-            input_contribution = input_scaled[0] * coefficients
-
-            fig, ax = plt.subplots(figsize=(8, 4))
-            fig.patch.set_facecolor('#1c1f2e')
-            ax.set_facecolor('#1c1f2e')
-
-            colors = ['#10b981' if v > 0 else '#ef4444' for v in input_contribution]
-            bars = ax.barh(feature_names, input_contribution, color=colors)
-            ax.set_xlabel("Impact on Score", color='white')
-            ax.set_title("Feature Contributions to Prediction", color='white')
-            ax.tick_params(colors='white')
-            ax.spines['bottom'].set_color('#444')
-            ax.spines['left'].set_color('#444')
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-
-            for bar, val in zip(bars, input_contribution):
-                ax.text(val + 0.1, bar.get_y() + bar.get_height()/2,
-                       f'{val:.1f}', va='center', color='white', fontsize=10)
-
-            st.pyplot(fig)
-
-            st.markdown("### 📝 Explanation in Simple Words")
-            explanation_items = sorted(
-                zip(feature_names, input_contribution),
-                key=lambda x: abs(x[1]),
-                reverse=True
-            )
-            for fname, fval in explanation_items:
-                if fval > 0:
-                    st.markdown(f"✅ **{fname}** boosted your score by **+{fval:.1f}** points")
+                # Grade logic
+                if prediction >= 80:
+                    grade = "A 🌟"
+                    msg = "Outstanding Performance!"
+                elif prediction >= 60:
+                    grade = "B 👍"
+                    msg = "Good Performance!"
+                elif prediction >= 40:
+                    grade = "C 📈"
+                    msg = "Average - Keep Pushing!"
                 else:
-                    st.markdown(f"❌ **{fname}** reduced your score by **{fval:.1f}** points")
+                    grade = "D 💪"
+                    msg = "Needs Improvement!"
+
+                # Save prediction history
+                history_file = "prediction_history.csv"
+                if not os.path.exists(history_file):
+                    with open(history_file, "w", newline="") as f:
+                        writer = csv.writer(f)
+                        writer.writerow(["Timestamp", "Hours Studied", "Previous Scores",
+                                        "Extracurricular", "Sleep Hours", "Papers Practiced",
+                                        "Predicted Score", "Grade"])
+                with open(history_file, "a", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                    hours, prev_scores, extra, sleep, papers,
+                                    round(prediction, 1), grade.split()[0]])
+
+                # Result box
+                st.markdown(f"""
+                <div class='result-box'>
+                    <p>Predicted Performance Index</p>
+                    <h1>{prediction:.1f} / 100</h1>
+                    <p>Grade: {grade} &nbsp;|&nbsp; {msg}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Feature chart
+                st.markdown("### 🔍 Why this prediction?")
+                coefficients = model.coef_
+                input_contribution = input_scaled[0] * coefficients
+
+                fig, ax = plt.subplots(figsize=(8, 4))
+                fig.patch.set_facecolor('#1c1f2e')
+                ax.set_facecolor('#1c1f2e')
+                colors = ['#10b981' if v > 0 else '#ef4444' for v in input_contribution]
+                bars = ax.barh(feature_names, input_contribution, color=colors)
+                ax.set_xlabel("Impact on Score", color='white')
+                ax.set_title("Feature Contributions to Prediction", color='white')
+                ax.tick_params(colors='white')
+                ax.spines['bottom'].set_color('#444')
+                ax.spines['left'].set_color('#444')
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                for bar, val in zip(bars, input_contribution):
+                    ax.text(val + 0.1, bar.get_y() + bar.get_height()/2,
+                           f'{val:.1f}', va='center', color='white', fontsize=10)
+                st.pyplot(fig)
+
+                # Text explanation
+                st.markdown("### 📝 Explanation in Simple Words")
+                explanation_items = sorted(
+                    zip(feature_names, input_contribution),
+                    key=lambda x: abs(x[1]),
+                    reverse=True
+                )
+                for fname, fval in explanation_items:
+                    if fval > 0:
+                        st.markdown(f"✅ **{fname}** boosted your score by **+{fval:.1f}** points")
+                    else:
+                        st.markdown(f"❌ **{fname}** reduced your score by **{fval:.1f}** points")
+
+                # Show history
+                st.markdown("### 📜 Prediction History")
+                if os.path.exists(history_file):
+                    history_df = __import__('pandas').read_csv(history_file)
+                    st.dataframe(history_df, use_container_width=True)
 
         else:
             st.markdown("""
